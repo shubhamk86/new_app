@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Quote Generator</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        #quote { font-size: 24px; margin: 20px; }
+        button { padding: 10px; background: blue; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Random Quote Generator</h1>
+    <div id="quote">Click the button to get a quote!</div>
+    <button onclick="generateQuote()">New Quote</button>
+
+    <script>
+        const quotes = [
+            "The best way to predict the future is to create it.",
+            "Do what you love, and you'll never work a day in your life.",
+            "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+            "Happiness depends upon ourselves."
+        ];
+
+        function generateQuote() {
+            const randomIndex = Math.floor(Math.random() * quotes.length);
+            document.getElementById("quote").innerText = quotes[randomIndex];
+        }
+    </script>
+</body>
+</html>
