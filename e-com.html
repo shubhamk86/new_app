@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <style>
+        body { background: #f8f9fa; }
+        .product img { width: 100px; height: 100px; margin-right: 10px; }
+        .cart-item img { width: 50px; height: 50px; margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <img src="logo.png" alt="Logo" width="40" height="40" class="d-inline-block align-top"> MyShop
+            </a>
+            <button class="btn btn-outline-light" onclick="logout()">Logout</button>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div id="login-section" class="row">
+            <div class="col-md-4 offset-md-4">
+                <h2 class="text-center">Login</h2>
+                <form onsubmit="login(event)">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                </form>
+            </div>
+        </div>
+        
+        <div id="shop-section" class="d-none">
+            <h2 class="text-center mt-4">Products</h2>
+            <div id="categories" class="mb-3 text-center"></div>
+            <div id="products" class="row"></div>
+            
+            <h2 class="text-center mt-5">Shopping Cart</h2>
+            <div class="cart card p-3" id="cart"></div>
+            <div class="cart-summary text-end mt-3 fw-bold" id="cart-summary">Total: $0</div>
+            <button class="btn btn-success w-100 mt-3" onclick="checkout()">Proceed to Checkout</button>
+
+            <h2 class="text-center mt-5">Payment Methods</h2>
+            <div class="text-center">
+                <img src="paypal.png" alt="PayPal" width="80">
+                <img src="visa.png" alt="Visa" width="80">
+                <img src="mastercard.png" alt="MasterCard" width="80">
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white text-center p-3 mt-5">
+        <p>&copy; 2025 MyShop. All rights reserved.</p>
+    </footer>
+
+    <script>
+        let cart = {};
+
+        function login(event) {
+            event.preventDefault();
+            sessionStorage.setItem("user", document.getElementById("email").value);
+            document.getElementById("login-section").classList.add("d-none");
+            document.getElementById("shop-section").classList.remove("d-none");
+        }
+
+        function logout() {
+            sessionStorage.removeItem("user");
+            location.reload();
+        }
+
+        async function fetchProducts() {
+            let response = await fetch('https://fakestoreapi.com/products');
+            let products = await response.json();
+            let categories = new Set(products.map(p => p.category));
+            let productsDiv = document.getElementById("products");
+            let categoriesDiv = document.getElementById("categories");
+            categoriesDiv.innerHTML = `<button class='btn btn-secondary' onclick='filterProducts("")'>All</button>`;
+            categories.forEach(category => {
+                categoriesDiv.innerHTML += `<button class='btn btn-outline-secondary mx-1' onclick='filterProducts("${category}")'>${category}</button>`;
+            });
+            renderProducts(products);
+        }
+
+        function renderProducts(products) {
+            let productsDiv = document.getElementById("products");
+            productsDiv.innerHTML = "";
+            products.forEach(product => {
+                productsDiv.innerHTML += `
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100">
+                            <img src="${product.image}" class="card-img-top" alt="Product Image">
+                            <div class="card-body">
+                                <h5 class="card-title">${product.title}</h5>
+                                <p class="card-text">$${product.price}</p>
+                                <button class="btn btn-primary w-100" onclick="addToCart('${product.id}', '${product.title}', ${product.price}, '${product.image}')">Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function filterProducts(category) {
+            fetch('https://fakestoreapi.com/products')
+                .then(res => res.json())
+                .then(data => {
+                    let filtered = category ? data.filter(p => p.category === category) : data;
+                    renderProducts(filtered);
+                });
+        }
+
+        function addToCart(id, name, price, image) {
+            if (cart[id]) {
+                cart[id].quantity++;
+            } else {
+                cart[id] = { name, price, image, quantity: 1 };
+            }
+            updateCart();
+        }
+
+        function updateCart() {
+            let cartDiv = document.getElementById("cart");
+            let total = 0;
+            cartDiv.innerHTML = "";
+            for (let id in cart) {
+                let item = cart[id];
+                let itemTotal = item.price * item.quantity;
+                total += itemTotal;
+                cartDiv.innerHTML += `
+                    <div class="cart-item d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center">
+                            <img src="${item.image}" class="me-2">
+                            <span>${item.name} - $${item.price} x ${item.quantity} = $${itemTotal.toFixed(2)}</span>
+                        </div>
+                        <button class="btn btn-danger btn-sm" onclick="removeFromCart('${id}')"><i class="fas fa-trash"></i></button>
+                    </div>`;
+            }
+            document.getElementById("cart-summary").innerText = `Total: $${total.toFixed(2)}`;
+        }
+
+        function removeFromCart(id) {
+            if (cart[id].quantity > 1) {
+                cart[id].quantity--;
+            } else {
+                delete cart[id];
+            }
+            updateCart();
+        }
+
+        function checkout() {
+            alert("Proceeding to payment...");
+        }
+
+        fetchProducts();
+    </script>
+</body>
+</html>
